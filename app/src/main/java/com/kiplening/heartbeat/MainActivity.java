@@ -9,16 +9,14 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
 
-import java.net.Socket;
 import java.util.Date;
 
 public class MainActivity extends AppCompatActivity {
 
     private TextView beat;
     private Button button;
-    private Socket socket;
     private TcpClient mTcpClient = null;
-    private connectTask conctTask = null;
+    private ConnectTask conctTask = null;
     private Handler handler ;
     private int HeartBeatTime = 4*1000;
 
@@ -32,7 +30,7 @@ public class MainActivity extends AppCompatActivity {
 
         //mTcpClient = new TcpClient();
         //mTcpClient.run();
-        conctTask = new connectTask();
+        conctTask = new ConnectTask();
         System.out.println("New Task............");
         conctTask.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
         //conctTask.doInBackground()
@@ -61,7 +59,7 @@ public class MainActivity extends AppCompatActivity {
         new Thread(new MyThread()).start();
     }
 
-    public class connectTask extends AsyncTask<String,String,TcpClient> {
+    public class ConnectTask extends AsyncTask<String,String,TcpClient> {
         @Override
         protected TcpClient doInBackground(String... message)
         {

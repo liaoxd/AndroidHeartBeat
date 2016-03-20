@@ -1,7 +1,5 @@
 package com.kiplening.heartbeat;
 
-import android.util.Log;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -25,17 +23,12 @@ public class TcpClient {
 
     public void stopClient(){mRun = false;}
 
-    public void sendMessage(String message) {
+    public void sendMessage(String message) throws IOException {
         if (os != null) {
             System.out.println("message: "+ message);
-            try {
-                os.write(message.getBytes());
-            } catch (IOException e) {
-                mRun = false;
-                System.out.println("连接断开，正在重连。。。。");
-                run();
-                e.printStackTrace();
-            }
+
+            os.write(message.getBytes());
+
         }
     }
     public void heartBeat(int value){

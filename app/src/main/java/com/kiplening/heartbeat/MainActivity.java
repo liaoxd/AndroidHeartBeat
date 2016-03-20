@@ -9,6 +9,7 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
 
+import java.io.IOException;
 import java.util.Date;
 
 public class MainActivity extends AppCompatActivity {
@@ -19,6 +20,11 @@ public class MainActivity extends AppCompatActivity {
     private ConnectTask conctTask = null;
     private Handler handler ;
     private int HeartBeatTime = 4*1000;
+    private int successCount = 0;
+    private int successHeartBeatTime;
+    private int stepTime = 30*1000;
+    private int failTime = 0;
+    private int STATE = 0;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -28,12 +34,9 @@ public class MainActivity extends AppCompatActivity {
         beat = (TextView) findViewById(R.id.beat);
         button = (Button) findViewById(R.id.button);
 
-        //mTcpClient = new TcpClient();
-        //mTcpClient.run();
         conctTask = new ConnectTask();
         System.out.println("New Task............");
         conctTask.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
-        //conctTask.doInBackground()
 
         beat.setText(new Date().toString());
 
@@ -50,13 +53,71 @@ public class MainActivity extends AppCompatActivity {
                 // 要做的事情
                 super.handleMessage(msg);
                 switch (msg.what){
-                    case 1:mTcpClient.sendMessage("beat");break;
+                    case 0:
+                        try{
+                            if (successCount < 3 ){
+                                mTcpClient.sendMessage("beat");
+                            }
+                            else {
+                                STATE = 1;
+                                successCount = 0;
+                            }
+                        }catch (IOException e){
+                            e.printStackTrace();
+                        }
+                        break;
+                    case 1:
+                        try {
+                            if (failTime < 3){
+
+                                mTcpClient.sendMessage("beat");
+                                successHeartBeatTime = HeartBeatTime;
+                                HeartBeatTime = HeartBeatTime + stepTime;
+                                failTime = 0;
+                            }else {
+                                failTime = 0;
+                                STATE = 2;
+                            }
+
+                        } catch (IOException e) {
+                            STATE = 0;
+                            mTcpClient.run();
+                            e.printStackTrace();
+                        }
+                        break;
+                    case 2:
+                        try {
+                            mTcpClient.sendMessage("beat");
+                            HeartBeatTime = 0;
+
+                        } catch (IOException e) {
+                            //STATE = 0;
+                            if (failTime < 3){
+                                failTime++;
+                                mTcpClient.run();
+                            }
+                            else {
+                                failTime = 0;
+                                STATE = 0;
+                                mTcpClient.run();
+                            }
+                            e.printStackTrace();
+                        }
+                        break;
                     default:break;
                 }
 
             }
         };
         new Thread(new MyThread()).start();
+    }
+
+    private void reConnect() {
+        HeartBeatTime = 4*1000;
+        successHeartBeatTime = HeartBeatTime;
+        successCount = 0;
+        STATE = 0;
+        mTcpClient.run();
     }
 
     public class ConnectTask extends AsyncTask<String,String,TcpClient> {
@@ -69,7 +130,11 @@ public class MainActivity extends AppCompatActivity {
             mTcpClient.run();
             if(mTcpClient!=null)
             {
-                mTcpClient.sendMessage("Initial");
+                try {
+                    mTcpClient.sendMessage("Initial");
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
             }
             return null;
         }
@@ -82,9 +147,11 @@ public class MainActivity extends AppCompatActivity {
             // TODO Auto-generated method stub
             while (true) {
                 try {
-                    Thread.sleep(HeartBeatTime);// 线程暂停10秒，单位毫秒
+                    Thread.sleep(1000); //暂停一秒，让程序处理更新HeartBeatTime
+                    Thread.sleep(HeartBeatTime-1000);// 线程暂停，单位毫秒
                     Message message = new Message();
-                    message.what = 1;
+
+                    message.what = STATE;
                     handler.sendMessage(message);// 发送消息
                 } catch (InterruptedException e) {
                     // TODO Auto-generated catch block

@@ -57,6 +57,7 @@ public class MainActivity extends AppCompatActivity {
                         try{
                             if (successCount < 3 ){
                                 mTcpClient.sendMessage("beat");
+                                successCount++;
                             }
                             else {
                                 STATE = 1;
